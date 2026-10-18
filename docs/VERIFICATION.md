@@ -1,32 +1,44 @@
 # Verification record
 
-Updated 2026-10-18. This document records executed checks, not guarantees about untested hosting environments.
+Updated 2026-10-18. This records executed checks and their limits.
 
-## Local environment
+## Verified revision
 
-Windows, Node 24.12.0. Docker/PostgreSQL/Redis are not installed on this host, so full Docker isolation and database/queue integration are exercised by the GitHub Actions integration job rather than claimed as locally verified.
+Application revision: `7f6a8971662e27ad687b28fdf760cd897380787c`.
 
-- Prisma PostgreSQL schema generated and initial SQL migration committed.
-- API TypeScript build and 11 authentication/authorization/security tests passed.
-- Worker/browser TypeScript builds and eight extraction/report/backpressure tests passed.
-- Core public URL/IP/DNS-rebinding and private-storage tests passed.
-- Full frontend production build passed using the documented webpack path. Browser QA confirmed the desktop landing, mobile landing, registration layout and field validation. Actual screenshots are in docs/screenshots.
-- Dependency audit: zero reported vulnerabilities after compatible patches and documented transitive overrides. Prisma config uses effect 3.20.0 and deepmerge-ts 8.0.2; Swagger uses js-yaml 5.5.0. Prisma generate/build validate these toolchain overrides.
-- Real browser PDF smoke succeeded using installed Microsoft Edge with sandbox enabled; output was a valid PDF of 40,234 bytes. Docker uses a matching Playwright Chromium version instead.
-- Real example.com mobile/desktop Lighthouse, axe-core and two screenshots completed through the development runner. This does not substitute for the isolated Docker check.
-- Final local suite: 34 passed, zero failed, one gated real-stack integration test skipped. Ten cases were added by the independent QA/Security agent.
+[GitHub Actions run 39143595001](https://github.com/King4kali/sitescope/actions/runs/39143595001): **both jobs succeeded**.
+
+| Check                                                                     | Result                                                                         |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Prisma generation and PostgreSQL schema validation                        | Passed                                                                         |
+| All workspace TypeScript checks                                           | Passed                                                                         |
+| Automated suite                                                           | 35 passed, 0 failed; the separately gated integration test skipped in this job |
+| Production builds: core, API, worker, browser and Next.js                 | Passed                                                                         |
+| npm dependency audit                                                      | Zero reported vulnerabilities                                                  |
+| Full Docker Compose build, migrations, private bucket and service startup | Passed                                                                         |
+| Isolated Chromium sandbox and actual PDF preflight                        | Passed; valid PDF, 16,072 bytes                                                |
+| Real PostgreSQL/Redis/BullMQ/SMTP/S3 audit scenario                       | 1 passed, 0 failed, 0 skipped                                                  |
 
 ## Full-stack acceptance
 
-The integration test uses a real PostgreSQL, Redis/BullMQ, SMTP/Mailpit, isolated browser runner, validating egress proxy and private object storage. It asserts real registration/verification/reset, session revocation, CSRF and ownership, concurrent quotas, outbox/idempotency, an actual example.com audit, mobile/desktop Lighthouse measurements, two PNG downloads and an authorized PDF. It is skipped unless INTEGRATION_TESTS=1. A skipped test is not a pass.
+The real integration scenario verified registration, delivery of verification/reset emails to Mailpit, single-use verification, password reset and session revocation, CSRF rejection, cross-user access denial, concurrent project/active-audit quotas, daily usage limits, transactional outbox and idempotency. It then audited example.com with successful independent mobile/desktop Lighthouse measurements, downloaded both real PNG screenshots, generated and downloaded a real PDF, checked that another user could not download those artifacts, and deleted the disposable accounts and associated data.
 
-The CI result is available at https://github.com/King4kali/sitescope/actions. Ubuntu types, tests, Prisma validation, production builds and dependency audit passed. The first Compose run identified an unavailable MinIO image; the development stack now uses the official S3-compatible RustFS 1.0.3 image and a native AWS SDK bucket initializer. Final full-stack run results will be recorded after execution.
+The browser container used its nonroot user, Chromium sandbox, custom seccomp profile, read-only root filesystem, dropped host capabilities, resource limits and internal-only networks. External browser traffic passed through the public-address-validating, IP-pinned egress proxy. This confirms a functional run in the tested topology; it is not an exhaustive network penetration test.
+
+## Local and independent checks
+
+- Windows, Node 24.12.0. Docker/PostgreSQL/Redis are not installed on this workstation; the complete stack was verified on GitHub's Ubuntu runner.
+- Actual Microsoft Edge development smoke completed mobile/desktop Lighthouse, axe-core, two screenshots and PDF rendering. Production Docker uses matching Playwright/Chromium versions.
+- Desktop/mobile landing pages and mobile registration layout/validation were inspected in the browser. Actual interface screenshots are in `docs/screenshots/`.
+- Independent QA/Security added ten regression cases for authorization, rate-window separation, outbound IP pinning, redirects, byte budgets and absolute deadlines. A further browser-boundary case verifies that isolated DNS is delegated only to the configured proxy.
+- Toolchain overrides: Prisma config uses effect 3.20.0 and deepmerge-ts 8.0.2; Swagger uses js-yaml 5.5.0. Generation, compilation and the dependency audit passed with these overrides.
 
 ## Deployment-dependent items
 
-- No public hosting provisioned. GitHub repository and CI are separate from a running SaaS.
-- Real SMTP credentials, HTTPS ingress, production secrets and target-host browser/network isolation need deployment configuration.
-- CrUX requires an optional API key and sufficient real-user data. No key was provided.
-- Backup commands are documented; a restore drill against a production provider has not been executed.
-- A 30-day artifact expiration is enforced at download; automatic bucket lifecycle/metadata cleanup must be configured by the hosting operator.
-- No p95 performance/load guarantee is claimed; worker concurrency starts at one and needs load testing on the target host.
+- No public SaaS hosting was provisioned. The GitHub repository and temporary CI stack are separate from a persistent running service.
+- Public hosting needs HTTPS ingress, production secrets, real SMTP, backups, storage lifecycle policies and target-host isolation checks. See `DEPLOYMENT.md`.
+- CrUX requires an optional API key and eligible real-user data; no key was provided.
+- Backup/restore commands are documented; a production-provider restore drill was not executed.
+- Screenshot download expiration is enforced by the API. Automatic S3 lifecycle and expired-metadata cleanup must be configured by the hosting operator.
+- No p95 latency or load guarantee is claimed. Worker concurrency starts at one and needs load testing on the target host.
+- Automated accessibility and header checks do not certify WCAG compliance or complete security.
