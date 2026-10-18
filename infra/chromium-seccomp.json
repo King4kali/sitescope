@@ -837,6 +837,16 @@
       "comment": "Return ENOSYS for clone3 so modern glibc falls back to permitted clone.",
       "includes": {},
       "excludes": {}
+    },
+    {
+      "names": [
+        "chroot"
+      ],
+      "action": "SCMP_ACT_ALLOW",
+      "args": [],
+      "comment": "Chromium chroots inside its own unprivileged user namespace. Host capabilities remain dropped.",
+      "includes": {},
+      "excludes": {}
     }
   ]
 }
