@@ -14,6 +14,7 @@ COPY apps/browser apps/browser
 RUN npm run build -w @sitescope/core && npm run build -w @sitescope/browser
 ENV NODE_ENV=production
 ENV PORT=4100
+ENV HOME=/tmp
 USER pwuser
 EXPOSE 4100
 CMD ["node","apps/browser/dist/main.js"]

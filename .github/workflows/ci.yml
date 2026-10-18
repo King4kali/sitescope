@@ -55,6 +55,8 @@ jobs:
           exit 1
       - run: npm ci
       - run: npm run db:generate && npm run build -w @sitescope/core
+      - name: Verify isolated Chromium sandbox and PDF startup
+        run: docker compose exec -T -e SMOKE_OUTPUT_DIR=/tmp/sitescope-preflight browser node apps/browser/dist/smoke.js
       - name: Real registration, email, isolation, quotas, Lighthouse, PNG and PDF
         run: npm run test:integration
         env:

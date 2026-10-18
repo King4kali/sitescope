@@ -132,13 +132,14 @@ async function launch(signal: AbortSignal): Promise<Runtime> {
   let child: ChildProcess | undefined;
   let browser: Browser | undefined;
   let launchError: Error | undefined;
+  let diagnostic = '';
   const cleanup = async () => {
     signal.removeEventListener('abort', stop);
     if (browser) await Promise.race([browser.close().catch(() => undefined), delay(2000)]);
-    if (child && child.exitCode === null) {
+    if (child && child.exitCode === null && child.signalCode === null) {
       child.kill('SIGTERM');
       await Promise.race([new Promise((resolve) => child!.once('exit', resolve)), delay(2000)]);
-      if (child.exitCode === null) child.kill('SIGKILL');
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
     }
     await removeProfile(profile).catch(() => undefined);
   };
@@ -150,31 +151,49 @@ async function launch(signal: AbortSignal): Promise<Runtime> {
     child = spawn(
       process.env.BROWSER_EXECUTABLE_PATH ?? chromium.executablePath(),
       [...chromiumArguments(port, profile), 'about:blank'],
-      { env: chromiumEnvironment(), stdio: 'ignore', windowsHide: true },
+      { env: chromiumEnvironment(), stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true },
     );
+    child.stderr?.on('data', (chunk: Buffer) => {
+      diagnostic = (diagnostic + chunk.toString()).slice(-6000);
+    });
     child.once('error', (error) => {
       launchError = error;
     });
     signal.addEventListener('abort', stop, { once: true });
+    let ready = false;
     for (let iteration = 0; iteration < 100; iteration += 1) {
       if (signal.aborted) throw new Error('BROWSER_TIMEOUT');
       if (launchError) throw launchError;
-      if (child.exitCode !== null) throw new Error('CHROMIUM_START_FAILED_SANDBOX_OR_DEPENDENCY');
+      if (child.exitCode !== null || child.signalCode !== null)
+        throw new Error('CHROMIUM_START_FAILED_SANDBOX_OR_DEPENDENCY');
       try {
         const response = await fetch(`http://127.0.0.1:${port}/json/version`, {
           signal: AbortSignal.timeout(500),
         });
-        if (response.ok) break;
+        if (response.ok) {
+          ready = true;
+          break;
+        }
       } catch {
         /* Chromium may still be starting. */
       }
       await delay(100);
     }
+    if (!ready) throw new Error('CHROMIUM_DEBUGGING_NOT_READY');
     browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 5000 });
     const context = browser.contexts()[0];
     if (!context) throw new Error('NO_BROWSER_CONTEXT');
     return { browser, context, port, cleanup };
   } catch (failure) {
+    console.error(
+      JSON.stringify({
+        service: 'browser',
+        event: 'chromium-start-failed',
+        exitCode: child?.exitCode,
+        signal: child?.signalCode,
+        diagnostic: diagnostic.replace(/https?:\/\/\S+/g, '[URL]'),
+      }),
+    );
     await cleanup();
     throw failure;
   }
