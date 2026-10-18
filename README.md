@@ -6,6 +6,8 @@
 
 SiteScope turns a public URL into a saved technical report: real mobile/desktop Lighthouse measurements, SEO findings, broken links, automated accessibility checks, TLS/response headers, screenshots and a downloadable PDF. Checks run in a background worker; failures remain explicit and partial results survive.
 
+![SiteScope interface](docs/screenshots/landing-desktop.png)
+
 ## Run locally
 
 ```sh

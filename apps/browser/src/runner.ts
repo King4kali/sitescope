@@ -7,18 +7,22 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
 import lighthouse from 'lighthouse';
-import {
-  validatePublicUrl,
-  type BrowserOutput,
-  type FindingInput,
-  type ModuleResult,
-} from '@sitescope/core';
+import { type BrowserOutput, type FindingInput, type ModuleResult } from '@sitescope/core';
+import { validateBrowserDestination } from './boundary.js';
 
 const proxyUrl = process.env.PROXY_URL ?? process.env.HTTP_PROXY;
 const maxRequests = Math.min(300, Number(process.env.BROWSER_MAX_REQUESTS) || 150);
 const maxBytes = Math.min(80_000_000, Number(process.env.BROWSER_MAX_BYTES) || 30_000_000);
 const deviceTimeoutMs = Math.min(90_000, Number(process.env.BROWSER_DEVICE_TIMEOUT_MS) || 75_000);
-const userAgent = 'SiteScopeBot/1.0 (public website audit; Chromium)';
+function deviceUserAgent(device: 'mobile' | 'desktop', browserVersion: string): string {
+  const milestone = /^\d+/.exec(browserVersion)?.[0];
+  if (!milestone) throw new Error('BROWSER_VERSION_UNAVAILABLE');
+  const platform =
+    device === 'mobile'
+      ? 'Linux; Android 11; moto g power (2022)'
+      : 'Macintosh; Intel Mac OS X 10_15_7';
+  return `Mozilla/5.0 (${platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${milestone}.0.0.0${device === 'mobile' ? ' Mobile' : ''} Safari/537.36 SiteScopeBot/1.0`;
+}
 
 function emptyResult(module: ModuleResult['module'], device: string, code?: string): ModuleResult {
   return {
@@ -197,7 +201,6 @@ async function guardContext(context: BrowserContext, stop: () => void): Promise<
       stop();
     }
   };
-  await context.setExtraHTTPHeaders({ 'User-Agent': userAgent });
   // Lighthouse uses a default CDP context, so enforce this before site scripts.
   await context.addInitScript(() => {
     if ('serviceWorker' in navigator) {
@@ -221,7 +224,7 @@ async function guardContext(context: BrowserContext, stop: () => void): Promise<
         await route.abort('blockedbyclient');
         return;
       }
-      await validatePublicUrl(request.url());
+      await validateBrowserDestination(request.url(), proxyUrl);
       const redirects = (() => {
         let count = 0;
         let previous = request.redirectedFrom();
@@ -342,6 +345,7 @@ async function measureDevice(
     AbortSignal.timeout(deviceTimeoutMs),
   ]);
   const runtime = await launch(deviceSignal);
+  const userAgent = deviceUserAgent(device, runtime.browser.version());
   let budget: NetworkBudget = {
     requests: 0,
     bytes: 0,
@@ -363,6 +367,7 @@ async function measureDevice(
         onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
         maxWaitForLoad: 25_000,
         formFactor: device,
+        emulatedUserAgent: userAgent,
         screenEmulation:
           device === 'desktop'
             ? { mobile: false, width: 1440, height: 900, deviceScaleFactor: 1, disabled: false }
@@ -408,6 +413,7 @@ async function measureDevice(
         warnings: lhr.runWarnings,
         profile: {
           formFactor: device,
+          userAgent,
           proxiedAndGuarded: Boolean(proxyUrl),
           coldStorage: true,
           maxRequests,
@@ -456,6 +462,7 @@ async function measureDevice(
     const context = await runtime.browser.newContext({
       viewport: device === 'desktop' ? { width: 1440, height: 900 } : { width: 390, height: 844 },
       isMobile: device === 'mobile',
+      hasTouch: device === 'mobile',
       deviceScaleFactor: 1,
       userAgent,
       serviceWorkers: 'block',
@@ -467,7 +474,7 @@ async function measureDevice(
     if (response && response.status() >= 400)
       throw new Error(`SCREENSHOT_HTTP_${response.status()}`);
     await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => undefined);
-    await validatePublicUrl(page.url());
+    await validateBrowserDestination(page.url(), proxyUrl);
     finalUrl = page.url();
     const image = await page.screenshot({
       type: 'png',
@@ -565,7 +572,7 @@ async function measureDevice(
 }
 
 export async function runBrowserAudit(url: string, signal: AbortSignal): Promise<BrowserOutput> {
-  await validatePublicUrl(url);
+  await validateBrowserDestination(url, proxyUrl);
   const output: BrowserOutput = { results: [], screenshots: [] };
   for (const device of ['mobile', 'desktop'] as const) {
     try {

@@ -37,7 +37,17 @@ app.post(['/audit', '/pdf'], async (request, response) => {
     if (audit) response.json(await runBrowserAudit(request.body.url, controller.signal));
     else
       response.type('application/pdf').send(await createPdf(request.body.html, controller.signal));
-  } catch {
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        service: 'browser',
+        event: 'request-failed',
+        code:
+          error instanceof Error
+            ? ((error as Error & { code?: string }).code ?? error.name)
+            : 'UNKNOWN_ERROR',
+      }),
+    );
     if (!response.headersSent && !response.destroyed)
       response
         .status(controller.signal.aborted ? 504 : 500)
