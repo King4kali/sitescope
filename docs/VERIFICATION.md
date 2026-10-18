@@ -27,7 +27,8 @@ The browser container used its nonroot user, Chromium sandbox, custom seccomp pr
 
 ## Local and independent checks
 
-- Windows, Node 24.12.0. Docker/PostgreSQL/Redis are not installed on this workstation; the complete stack was verified on GitHub's Ubuntu runner.
+- Windows local acceptance passed on 2026-10-18 with Node 24.12.0, WSL 3.0.3.0 and Docker Desktop 4.95.0 (Engine 29.8.2, Compose v5.6.0). The complete Compose stack built and started locally, migrations and private bucket initialization succeeded, and API readiness returned PostgreSQL/Redis up through both the API and web proxy.
+- Local isolated Chromium/PDF preflight passed (16,072-byte PDF). The full integration scenario passed locally: 1 passed, 0 failed, 0 skipped in 38.6 seconds, including independent mobile/desktop Lighthouse, two PNG downloads and authorized PDF export. Disposable accounts were removed by the test. The browser registration page loaded at http://localhost:3000/register.
 - Actual Microsoft Edge development smoke completed mobile/desktop Lighthouse, axe-core, two screenshots and PDF rendering. Production Docker uses matching Playwright/Chromium versions.
 - Desktop/mobile landing pages and mobile registration layout/validation were inspected in the browser. Actual interface screenshots are in `docs/screenshots/`.
 - Independent QA/Security added ten regression cases for authorization, rate-window separation, outbound IP pinning, redirects, byte budgets and absolute deadlines. A further browser-boundary case verifies that isolated DNS is delegated only to the configured proxy.
