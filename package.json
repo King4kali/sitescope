@@ -1,0 +1,73 @@
+{
+  "name": "sitescope",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @sitescope/web",
+    "dev:api": "npm run dev -w @sitescope/api",
+    "dev:worker": "npm run dev -w @sitescope/worker",
+    "build": "npm run build -w @sitescope/core && npm run build -w @sitescope/api && npm run build -w @sitescope/worker && npm run build -w @sitescope/browser && npm run build -w @sitescope/web",
+    "typecheck": "npm run build -w @sitescope/core && tsc --noEmit -p packages/core && tsc --noEmit -p apps/api && tsc --noEmit -p apps/worker && tsc --noEmit -p apps/browser && npm run typecheck -w @sitescope/web",
+    "test": "tsx --tsconfig tsconfig.base.json --test tests/*.test.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:dev": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "test:integration": "tsx --tsconfig tsconfig.base.json --test tests/*.integration.test.ts"
+  },
+  "engines": {
+    "node": ">=22.19"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.910.0",
+    "@aws-sdk/s3-request-presigner": "^3.910.0",
+    "@axe-core/playwright": "^4.11.0",
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/platform-express": "^11.1.0",
+    "@nestjs/swagger": "^11.2.0",
+    "@prisma/client": "6.19.3",
+    "argon2": "^0.44.0",
+    "bullmq": "^5.61.0",
+    "cheerio": "^1.1.2",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.8.0",
+    "ipaddr.js": "^2.2.0",
+    "lighthouse": "^13.0.0",
+    "nodemailer": "^10.1.6",
+    "pino": "^10.0.0",
+    "playwright": "1.64.0",
+    "playwright-core": "1.64.0",
+    "reflect-metadata": "^0.2.2",
+    "robots-parser": "^3.0.1",
+    "rxjs": "^7.8.2",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.0",
+    "@types/nodemailer": "^8.0.2",
+    "prettier": "^3.6.2",
+    "prisma": "6.19.3",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "@prisma/config": {
+      "effect": "3.20.0",
+      "deepmerge-ts": "8.0.2"
+    },
+    "@nestjs/swagger": {
+      "js-yaml": "5.5.0"
+    }
+  },
+  "type": "module"
+}

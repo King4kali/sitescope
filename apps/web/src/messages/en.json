@@ -1,0 +1,29 @@
+{
+  "common": {
+    "brand": "SiteScope",
+    "tagline": "Clarity for every website.",
+    "projects": "Projects",
+    "settings": "Settings",
+    "admin": "System overview",
+    "newProject": "New project",
+    "runAudit": "Run audit",
+    "viewReport": "View report",
+    "loading": "Loading your workspace",
+    "retry": "Try again",
+    "back": "Go back",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "signOut": "Sign out",
+    "search": "Search projects",
+    "noProjects": "A clearer picture starts here.",
+    "noProjectsBody": "Add your first website to measure performance, find technical issues, and track your progress.",
+    "noResults": "No projects match your search.",
+    "workspace": "Your workspace",
+    "overview": "Overview",
+    "report": "Audit report",
+    "history": "Audit history",
+    "compare": "Compare audits",
+    "export": "Export PDF",
+    "theme": "Change color theme"
+  }
+}
