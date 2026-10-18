@@ -202,7 +202,10 @@ async function guardContext(context: BrowserContext, stop: () => void): Promise<
   await context.addInitScript(() => {
     if ('serviceWorker' in navigator) {
       Object.defineProperty(Object.getPrototypeOf(navigator.serviceWorker), 'register', {
-        value: () => Promise.reject(new DOMException('Service workers are disabled during audits.', 'SecurityError')),
+        value: () =>
+          Promise.reject(
+            new DOMException('Service workers are disabled during audits.', 'SecurityError'),
+          ),
         writable: false,
         configurable: false,
       });
@@ -500,13 +503,11 @@ async function measureDevice(
           help: item.help,
           helpUrl: item.helpUrl,
           tags: item.tags,
-          nodes: item.nodes
-            .slice(0, 20)
-            .map((node) => ({
-              html: node.html.slice(0, 2000),
-              target: node.target,
-              failureSummary: node.failureSummary,
-            })),
+          nodes: item.nodes.slice(0, 20).map((node) => ({
+            html: node.html.slice(0, 2000),
+            target: node.target,
+            failureSummary: node.failureSummary,
+          })),
         })),
         incomplete: axe.incomplete.map((item) => ({
           id: item.id,
@@ -526,13 +527,11 @@ async function measureDevice(
         evidence: {
           impact: item.impact,
           helpUrl: item.helpUrl,
-          nodes: item.nodes
-            .slice(0, 10)
-            .map((node) => ({
-              html: node.html.slice(0, 2000),
-              target: node.target,
-              failureSummary: node.failureSummary,
-            })),
+          nodes: item.nodes.slice(0, 10).map((node) => ({
+            html: node.html.slice(0, 2000),
+            target: node.target,
+            failureSummary: node.failureSummary,
+          })),
         },
         pageUrl: finalUrl,
       }));

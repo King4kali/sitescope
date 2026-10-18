@@ -4,7 +4,7 @@
 
 Requirements: Node 22.19+ (24 recommended), Docker Engine with Compose v2, 4 CPU cores, around 6 GB available memory, and support for unprivileged user namespaces in the Linux Docker VM.
 
-1. Copy `.env.example` to `.env` and replace the database and storage passwords. Keep paired POSTGRES_PASSWORD/DATABASE_URL and MINIO_ROOT_PASSWORD/S3_SECRET_KEY values consistent for native commands. Avoid URL-reserved characters in the database password or URL-encode them in DATABASE_URL.
+1. Copy `.env.example` to `.env` and replace the database and storage passwords. Keep paired POSTGRES_PASSWORD/DATABASE_URL values consistent for native commands. Avoid URL-reserved characters in the database password or URL-encode them in DATABASE_URL.
 2. Run `docker compose up --build -d`.
 3. Open http://localhost:3000. Test email is captured at http://localhost:8025 (Mailpit). Verify your email to launch an audit.
 4. Create a project at a public URL, run an audit, wait for the persisted terminal status, and export a PDF.
